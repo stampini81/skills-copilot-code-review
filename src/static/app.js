@@ -894,23 +894,13 @@ document.addEventListener("DOMContentLoaded", () => {
     announcements.forEach((announcement) => {
       const banner = document.createElement("div");
       banner.className = "announcement-banner";
+      banner.innerHTML = `
+        <div class="announcement-content">
+          <p>${announcement.message}</p>
+          <span class="announcement-close" data-id="${announcement._id}">✕</span>
+        </div>
+      `;
 
-      const contentDiv = document.createElement("div");
-      contentDiv.className = "announcement-content";
-
-      const messageParagraph = document.createElement("p");
-      messageParagraph.textContent = announcement.message;
-
-      const closeSpan = document.createElement("span");
-      closeSpan.className = "announcement-close";
-      closeSpan.textContent = "✕";
-      if (announcement._id !== undefined && announcement._id !== null) {
-        closeSpan.dataset.id = String(announcement._id);
-      }
-
-      contentDiv.appendChild(messageParagraph);
-      contentDiv.appendChild(closeSpan);
-      banner.appendChild(contentDiv);
       // Add close handler
       banner
         .querySelector(".announcement-close")
@@ -957,61 +947,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     announcements.forEach((announcement) => {
-      const contentDiv = document.createElement("div");
-      contentDiv.className = "announcement-item-content";
+      const announcementItem = document.createElement("div");
+      announcementItem.className = "announcement-item";
 
-      const messageParagraph = document.createElement("p");
-      messageParagraph.className = "announcement-message";
-      messageParagraph.textContent = announcement.message || "";
+      const startDate = announcement.start_date
+        ? new Date(announcement.start_date).toLocaleString()
+        : "Not set";
+      const expirationDate = new Date(
+        announcement.expiration_date
+      ).toLocaleString();
 
-      const metaDiv = document.createElement("div");
-      metaDiv.className = "announcement-meta";
-
-      const startDate =
-        announcement.start_date && !Number.isNaN(Date.parse(announcement.start_date))
-          ? new Date(announcement.start_date).toLocaleDateString()
-          : "N/A";
-      const startSpan = document.createElement("span");
-      startSpan.className = "meta-item";
-      startSpan.textContent = `📅 Start: ${startDate}`;
-
-      const expiresSpan = document.createElement("span");
-      expiresSpan.className = "meta-item";
-      expiresSpan.textContent = `⏰ Expires: ${expirationDate}`;
-
-      metaDiv.appendChild(startSpan);
-      metaDiv.appendChild(expiresSpan);
-
-      contentDiv.appendChild(messageParagraph);
-      contentDiv.appendChild(metaDiv);
-
-      const actionsDiv = document.createElement("div");
-      actionsDiv.className = "announcement-item-actions";
-
-      const editButton = document.createElement("button");
-      editButton.className = "btn-secondary edit-announcement";
-      editButton.textContent = "Edit";
-      editButton.dataset.id = announcement._id;
-
-      const deleteButton = document.createElement("button");
-      deleteButton.className = "btn-danger delete-announcement";
-      deleteButton.textContent = "Delete";
-      deleteButton.dataset.id = announcement._id;
-
-      actionsDiv.appendChild(editButton);
-      actionsDiv.appendChild(deleteButton);
-
-      announcementItem.appendChild(contentDiv);
-      announcementItem.appendChild(actionsDiv);
+      announcementItem.innerHTML = `
+        <div class="announcement-item-content">
+          <p class="announcement-message">${announcement.message}</p>
+          <div class="announcement-meta">
+            <span class="meta-item">📅 Start: ${startDate}</span>
+            <span class="meta-item">⏰ Expires: ${expirationDate}</span>
+          </div>
+        </div>
+        <div class="announcement-item-actions">
+          <button class="btn-secondary edit-announcement" data-id="${announcement._id}">Edit</button>
+          <button class="btn-danger delete-announcement" data-id="${announcement._id}">Delete</button>
+        </div>
+      `;
 
       // Add event listeners
-      editButton.addEventListener("click", () => {
-        editAnnouncement(announcement);
-      });
-
-      deleteButton.addEventListener("click", () => {
-        deleteAnnouncement(announcement._id);
-      });
+      announcementItem
         .querySelector(".edit-announcement")
         .addEventListener("click", () => {
           editAnnouncement(announcement);
@@ -1019,20 +980,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       announcementItem
         .querySelector(".delete-announcement")
-      const payload = {
-        username: currentUser.username,
-        message: message,
-        expiration_date: expirationDate,
-        start_date: startDate || null,
-      };
+        .addEventListener("click", () => {
+          deleteAnnouncement(announcement._id);
+        });
 
-      const response = await fetch("/announcements", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      announcementsList.appendChild(announcementItem);
+    });
+  }
+
+  // Open manage announcements modal
+  function openAnnouncementsModal() {
+    announcementsModal.classList.remove("hidden");
+    announcementsModal.classList.add("show");
+    announcementForm.reset();
     formMessage.classList.add("hidden");
     fetchAllAnnouncements();
   }
@@ -1077,18 +1037,18 @@ document.addEventListener("DOMContentLoaded", () => {
       announcementForm.reset();
       fetchAllAnnouncements();
       fetchAnnouncements();
-      const response = await fetch(`/announcements/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: currentUser.username,
-          message: message,
-          expiration_date: expirationDate,
-          start_date: startDate || "",
-        }),
-      });
+    } catch (error) {
+      showFormMessage(error.message || "Failed to create announcement.", "error");
+      console.error("Error creating announcement:", error);
+    }
+  }
+
+  // Edit announcement
+  function editAnnouncement(announcement) {
+    document.getElementById("announcement-message").value =
+      announcement.message;
+
+    const startDate = announcement.start_date
       ? new Date(announcement.start_date).toISOString().slice(0, 16)
       : "";
     const expirationDate = new Date(announcement.expiration_date)
@@ -1247,3 +1207,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeFilters();
   fetchActivities();
   fetchAnnouncements();
+});
