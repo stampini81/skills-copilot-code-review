@@ -188,7 +188,7 @@ def delete_announcement(announcement_id: str, username: str) -> Dict[str, str]:
     # Validate ObjectId
     try:
         obj_id = ObjectId(announcement_id)
-    except:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid announcement ID")
     
     # Delete announcement
